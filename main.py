@@ -1,22 +1,23 @@
 #!/usr/bin/env python3
 """Write the competition meme to /output/entry.png.
 
-The artwork ships with the repository as art.png.  This program only reads
+The artwork ships with the repository as art.png. This program only reads
 that bundled file, verifies the house gate constraints, and writes the single
-artifact the judge sees.  It needs no network and no third-party packages.
+artifact the judge sees. It needs no network and no third-party packages.
 """
 
 import os
 from pathlib import Path
 import struct
 import sys
+
 OUTPUT = Path(os.environ.get("MAKEFUN_OUTPUT", "/output/entry.png"))
 ART = Path(__file__).resolve().with_name("art.png")
 MAX_BYTES = 1_048_576
 SIZE = (1024, 1024)
 
 # The judge's gate is strict about the signature, IHDR dimensions and total
-# size.  Keep this check in the entry so a bad bundled asset fails locally
+# size. Keep this check in the entry so a bad bundled asset fails locally
 # instead of producing an invalid artifact in the final sandbox.
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 IEND_CRC = b"\xaeB`\x82"
@@ -33,8 +34,15 @@ def check_png(data: bytes) -> None:
         raise ValueError(f"art.png is {width}x{height}, expected 1024x1024")
 
 
+def load_art() -> bytes:
+    """Read the artwork, naming the missing file clearly if it is absent."""
+    if not ART.is_file():
+        raise FileNotFoundError(f"bundled artwork missing: {ART}")
+    return ART.read_bytes()
+
+
 def main() -> int:
-    data = ART.read_bytes()
+    data = load_art()
     check_png(data)
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_bytes(data)
